@@ -65,7 +65,7 @@ const getContractData = async (address: string) => {
       contractPath = `contracts/${contractName}.sol`;
       break;
     }
-  }
+  };
 
   if (!contractPath) {
     // No contract found at this address
