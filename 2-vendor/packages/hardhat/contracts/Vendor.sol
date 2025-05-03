@@ -6,6 +6,7 @@ import "./YourToken.sol";
 
 contract Vendor is Ownable {
     event BuyTokens(address buyer, uint256 amountOfETH, uint256 amountOfTokens);
+    event SellTokens(address seller, uint256 amountOfETH, uint256 amountOfTokens);
 
     YourToken public yourToken;
     uint256 public constant tokensPerEth = 100;
@@ -42,5 +43,6 @@ contract Vendor is Ownable {
         // send ether to the seller
         (bool success, ) = msg.sender.call{value: etherAmount}("");
         require(success, "Transfer failed");
+        emit SellTokens(msg.sender, etherAmount, _amount);
     }
 }
