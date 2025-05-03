@@ -54,5 +54,11 @@ contract Staker {
         }
     }
 
-    // Add the `receive()` special function that receives eth and calls stake()
+    /**
+     * @dev `receive()` function is a special function, which doesn't have the keyword `function`
+     * https://ethereum.stackexchange.com/questions/81994/what-is-the-receive-keyword-in-solidity
+     */
+    receive() external payable {
+        stake();
+    }
 }
