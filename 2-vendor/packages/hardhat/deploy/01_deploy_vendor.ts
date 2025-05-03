@@ -21,6 +21,7 @@ const deployVendor: DeployFunction = async function (hre: HardhatRuntimeEnvironm
     with a random private key in the .env file (then used on hardhat.config.ts)
     You can run the `yarn account` command to check your balance in every network.
   */
+  console.log("deploy network:", hre.network.name);
 
   // Deploy Vendor
   const { deployer } = await hre.getNamedAccounts();
@@ -40,8 +41,13 @@ const deployVendor: DeployFunction = async function (hre: HardhatRuntimeEnvironm
   const vendorAddress = await vendor.getAddress();
   // Transfer tokens to Vendor
   await yourToken.transfer(vendorAddress, hre.ethers.parseEther("1000"));
-  // Transfer contract ownership to your frontend address
-  await vendor.transferOwnership("0x44310fC215a2A536F3e6a032Ab6525505e428D0D");
+  if (hre.network.name === "localhost") {
+    // transfer Vendor contract ownership to your frontend address
+    await vendor.transferOwnership("0x44310fC215a2A536F3e6a032Ab6525505e428D0D");
+  } else if (hre.network.name === "sepolia") {
+    // transfer Vendor contract ownership to liqwang.eth
+    await vendor.transferOwnership("0xa837ebf94024118f83a71a9617d0c4ec454ede53");
+  }
 };
 
 export default deployVendor;
