@@ -33,4 +33,14 @@ contract Vendor is Ownable {
     }
 
     // ToDo: create a sellTokens(uint256 _amount) function:
+    function sellTokens(uint256 _amount) public {
+        require(_amount > 0, "You must sell at least some tokens");
+        uint256 etherAmount = _amount / tokensPerEth;
+        require(address(this).balance >= etherAmount, "Not enough ether in the reserve");
+        // get the sold tokens back
+        yourToken.transferFrom(msg.sender, address(this), _amount);
+        // send ether to the seller
+        (bool success, ) = msg.sender.call{value: etherAmount}("");
+        require(success, "Transfer failed");
+    }
 }
