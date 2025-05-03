@@ -12,6 +12,11 @@ contract Staker {
     uint256 public deadline = block.timestamp + 30 seconds;
     bool public openForWithdraw = false;
 
+    modifier notCompleted() {
+        require(!exampleExternalContract.completed(), "Staking has already been completed");
+        _;
+    }
+
     // (Make sure to add a `Stake(address,uint256)` event and emit it for the frontend `All Stakings` tab to display)
     event Stake(address indexed staker, uint256 amount);
 
@@ -28,7 +33,7 @@ contract Staker {
 
     // After some `deadline` allow anyone to call an `execute()` function
     // If the deadline has passed and the threshold is met, it should call `exampleExternalContract.complete{value: address(this).balance}()`
-    function execute() public {
+    function execute() public notCompleted {
         require(block.timestamp >= deadline, "Deadline not reached");
         if (address(this).balance >= threshold) {
             exampleExternalContract.complete{value: address(this).balance}();
@@ -38,7 +43,7 @@ contract Staker {
     }
 
     // If the `threshold` was not met, allow everyone to call a `withdraw()` function to withdraw their balance
-    function withdraw() public {
+    function withdraw() public notCompleted {
         require(openForWithdraw, "Withdrawals are not open yet");
         uint256 balance = balances[msg.sender];
         balances[msg.sender] = 0;
