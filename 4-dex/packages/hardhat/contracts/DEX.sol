@@ -94,27 +94,31 @@ contract DEX {
      * @notice sends Ether to DEX in exchange for $BAL
      */
     function ethToToken() external payable returns (uint256 tokenOutput) {
+        require(msg.value > 0, "cannot swap 0 ETH");
         uint256 tokenReserves = token.balanceOf(address(this));
-        uint256 ethReserves = address(this).balance;
-        uint256 tokenAmount = price(msg.value, ethReserves, tokenReserves);
-        token.transfer(msg.sender, tokenAmount);
-        emit EthToTokenSwap(msg.sender, tokenAmount, msg.value);
-        return tokenAmount;
+        // IMPORTANT: in payable functions, the paid ETH has already been added to the contract balance
+        uint256 ethReserves = address(this).balance - msg.value;
+        // NOTE: in Solidity, the "named return variable" is initialized before the function execution
+        tokenOutput = price(msg.value, ethReserves, tokenReserves);
+        require(token.transfer(msg.sender, tokenOutput), "ethToToken(): reverted swap");
+        emit EthToTokenSwap(msg.sender, tokenOutput, msg.value);
+        return tokenOutput;
     }
 
     /**
      * @notice sends $BAL tokens to DEX in exchange for Ether
      */
     function tokenToEth(uint256 tokenInput) external returns (uint256 ethOutput) {
+        require(tokenInput > 0, "cannot swap 0 tokens");
         uint256 tokenReserves = token.balanceOf(address(this));
-        uint256 ethReserves = address(this).balance;
-        uint256 ethAmount = price(tokenInput, tokenReserves, ethReserves);
+        // NOTE: in Solidity, the "named return variable" is initialized before the function execution
+        ethOutput = price(tokenInput, tokenReserves, address(this).balance);
 
-        require(token.transferFrom(msg.sender, address(this), tokenInput), "Token Transfer failed.");
-        (bool success, ) = msg.sender.call{value: ethAmount}("");
-        require(success, "Transfer failed.");
-        emit TokenToEthSwap(msg.sender, tokenInput, ethAmount);
-        return ethAmount;
+        require(token.transferFrom(msg.sender, address(this), tokenInput), "tokenToEth(): reverted swap");
+        (bool success, ) = msg.sender.call{value: ethOutput}("");
+        require(success, "tokenToEth(): transfer ETH failed");
+        emit TokenToEthSwap(msg.sender, tokenInput, ethOutput);
+        return ethOutput;
     }
 
     /**
