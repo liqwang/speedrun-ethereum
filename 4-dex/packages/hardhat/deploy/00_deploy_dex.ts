@@ -49,20 +49,24 @@ const deployYourContract: DeployFunction = async function (hre: HardhatRuntimeEn
 
   const dex = (await hre.ethers.getContract("DEX", deployer)) as DEX;
 
-  // // paste in your front-end address here to get 10 balloons on deploy:
-  // await balloons.transfer("YOUR_FRONTEND_ADDRESS", "" + 10 * 10 ** 18);
+  if (hre.network.name === "localhost") {
+    // send 10 $BAL to the frontend address to get 10 balloons on deploy
+    await balloons.transfer("0x44310fC215a2A536F3e6a032Ab6525505e428D0D", "" + 10 * 10 ** 18);
+  } else if (hre.network.name === "sepolia") {
+    // send 10 $BAL to the liqwang.eth to get 10 balloons on deploy
+    await balloons.transfer("0xa837ebf94024118f83a71a9617d0c4ec454ede53", "" + 10 * 10 ** 18);
+  }
 
-  // // uncomment to init DEX on deploy:
-
-  // const dexAddress = await dex.getAddress();
-  // console.log("Approving DEX (" + dexAddress + ") to take Balloons from main account...");
-  // // If you are going to the testnet make sure your deployer account has enough ETH
-  // await balloons.approve(dexAddress, hre.ethers.parseEther("100"));
-  // console.log("INIT exchange...");
-  // await dex.init(hre.ethers.parseEther("5"), {
-  //   value: hre.ethers.parseEther("5"),
-  //   gasLimit: 200000,
-  // });
+  // uncomment to init DEX on deploy:
+  const dexAddress = await dex.getAddress();
+  console.log("Approving DEX (" + dexAddress + ") to take Balloons from main account...");
+  // If you are going to the testnet make sure your deployer account has enough ETH
+  await balloons.approve(dexAddress, hre.ethers.parseEther("100"));
+  console.log("INIT exchange...");
+  await dex.init(hre.ethers.parseEther("1"), {
+    value: hre.ethers.parseEther("1"),
+    gasLimit: 200000,
+  });
 };
 
 export default deployYourContract;
