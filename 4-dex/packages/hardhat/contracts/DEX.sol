@@ -94,12 +94,15 @@ contract DEX {
      * @notice sends Ether to DEX in exchange for $BAL
      */
     function ethToToken() external payable returns (uint256 tokenOutput) {
+        // 1. Calculate
         require(msg.value > 0, "cannot swap 0 ETH");
         uint256 tokenReserves = token.balanceOf(address(this));
         // IMPORTANT: in payable functions, the paid ETH has already been added to the contract balance
         uint256 ethReserves = address(this).balance - msg.value;
         // NOTE: in Solidity, the "named return variable" is initialized before the function execution
         tokenOutput = price(msg.value, ethReserves, tokenReserves);
+
+        // 2. Transfer
         require(token.transfer(msg.sender, tokenOutput), "ethToToken(): reverted swap");
         emit EthToTokenSwap(msg.sender, tokenOutput, msg.value);
         return tokenOutput;
@@ -109,11 +112,13 @@ contract DEX {
      * @notice sends $BAL tokens to DEX in exchange for Ether
      */
     function tokenToEth(uint256 tokenInput) external returns (uint256 ethOutput) {
+        // 1. Calculate
         require(tokenInput > 0, "cannot swap 0 tokens");
         uint256 tokenReserves = token.balanceOf(address(this));
         // NOTE: in Solidity, the "named return variable" is initialized before the function execution
         ethOutput = price(tokenInput, tokenReserves, address(this).balance);
 
+        // 2. Transfer
         require(token.transferFrom(msg.sender, address(this), tokenInput), "tokenToEth(): reverted swap");
         (bool success, ) = msg.sender.call{value: ethOutput}("");
         require(success, "tokenToEth(): transfer ETH failed");
@@ -123,17 +128,50 @@ contract DEX {
 
     /**
      * @notice allows deposits of $BAL and $ETH to liquidity pool
+     * NOTE: We want the ratio of $BAL and ETH be unchanged!
      * NOTE: parameter is the msg.value sent with this function call. That amount is used to determine the amount of $BAL needed as well and taken from the depositor.
      * NOTE: user has to make sure to give DEX approval to spend their tokens on their behalf by calling approve function prior to this function call.
      * NOTE: Equal parts of both assets will be removed from the user's wallet with respect to the price outlined by the AMM.
      */
     function deposit() external payable returns (uint256 tokensDeposited) {
+        // 1. Calculate
+        require(msg.value > 0, "cannot deposit 0 ETH");
+        uint256 tokenReserves = token.balanceOf(address(this));
+        // IMPORTANT: in payable functions, the paid ETH has already been added to the contract balance
+        uint256 ethReserves = address(this).balance - msg.value;
+        tokensDeposited = msg.value * tokenReserves / ethReserves;
 
+        // 2. Transfer
+        require(token.transferFrom(msg.sender, address(this), tokensDeposited), "deposit tokens failed");
+        // In this DEX contract, the liquidity only depends on the ETH amount
+        uint256 liquidityMinted = totalLiquidity * msg.value / ethReserves;
+        totalLiquidity += liquidityMinted;
+        liquidity[msg.sender] += liquidityMinted;
+        emit LiquidityProvided(msg.sender, liquidityMinted, msg.value, tokensDeposited);
+        return tokensDeposited;
     }
 
     /**
-     * @notice allows withdrawal of $BAL and $ETH from liquidity pool
-     * NOTE: with this current code, the msg caller could end up getting very little back if the liquidity is super low in the pool. I guess they could see that with the UI.
+     * @notice allows withdrawal of $BAL and ETH from liquidity pool
+     * @dev The withdraw() function lets a user take his LPT out, withdrawing both ETH and $BAL tokens out at the correct ratio.
+     * The actual amount of ETH and $BAL a LP withdraws could be higher than what they deposited because of the 0.3% fees collected from each trade.
+     * It also could be lower depending on the price fluctuations of $BAL to ETH and vice versa (from token swaps taking place using the AMM).
+     * The 0.3% fee incentivizes third parties to provide liquidity, but they must be cautious of Impermanent Loss(IL).
+     * See also: https://www.youtube.com/watch?v=8XJ1MSTEuU0
      */
-    function withdraw(uint256 amount) external returns (uint256 ethAmount, uint256 tokenAmount) {}
+    function withdraw(uint256 liquidityAmount) external returns (uint256 ethAmount, uint256 tokenAmount) {
+        // 1. Calculate
+        require(liquidity[msg.sender] >= liquidityAmount, "not enough liquidity to withdraw");
+        totalLiquidity -= liquidityAmount;
+        liquidity[msg.sender] -= liquidityAmount;
+        ethAmount = address(this).balance * liquidityAmount / totalLiquidity;
+        tokenAmount = token.balanceOf(address(this)) * liquidityAmount / totalLiquidity;
+
+        // 2. Transfer
+        (bool success, ) = msg.sender.call{value: ethAmount}("");
+        require(success, "withdraw(): transfer ETH failed");
+        require(token.transfer(msg.sender, tokenAmount), "withdraw(): transfer tokens failed");
+        emit LiquidityRemoved(msg.sender, liquidityAmount, tokenAmount, ethAmount);
+        return (ethAmount, tokenAmount);
+    }
 }
