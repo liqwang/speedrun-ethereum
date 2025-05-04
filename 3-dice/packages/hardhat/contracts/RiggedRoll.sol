@@ -27,7 +27,7 @@ contract RiggedRoll is Ownable {
 
         console.log("\t Rigged Roll: ", roll);
         if (roll > 5) {
-            return;
+            revert("Roll is going to lose");
         } else {
             require(address(this).balance >= 0.002 ether, "Not enough balance to roll the dice");
             diceGame.rollTheDice{value: 0.002 ether}();
