@@ -7,7 +7,7 @@ import { GenericContractsDeclaration } from "~~/utils/scaffold-eth/contract";
 const deployedContracts = {
   31337: {
     DiceGame: {
-      address: "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
+      address: "0xc5a5C42992dECbae36851359345FE25997F5C42d",
       abi: [
         {
           inputs: [],
@@ -104,7 +104,7 @@ const deployedContracts = {
       inheritedFunctions: {},
     },
     RiggedRoll: {
-      address: "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
+      address: "0x67d269191c92Caf3cD7723F116c85e6E9bf55933",
       abi: [
         {
           inputs: [
@@ -207,6 +207,24 @@ const deployedContracts = {
             },
           ],
           name: "transferOwnership",
+          outputs: [],
+          stateMutability: "nonpayable",
+          type: "function",
+        },
+        {
+          inputs: [
+            {
+              internalType: "address",
+              name: "account",
+              type: "address",
+            },
+            {
+              internalType: "uint256",
+              name: "amount",
+              type: "uint256",
+            },
+          ],
+          name: "withdraw",
           outputs: [],
           stateMutability: "nonpayable",
           type: "function",

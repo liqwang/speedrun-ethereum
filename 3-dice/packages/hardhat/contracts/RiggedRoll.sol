@@ -13,6 +13,11 @@ contract RiggedRoll is Ownable {
     }
 
     // Implement the `withdraw` function to transfer Ether from the rigged contract to a specified address.
+    function withdraw(address account, uint256 amount) external onlyOwner {
+        require(address(this).balance >= amount, "No enough balance to withdraw");
+        (bool success, ) = account.call{value: amount}("");
+        require(success, "Transfer failed");
+    }
 
     // Create the `riggedRoll()` function to predict the randomness in the DiceGame contract and only initiate a roll when it guarantees a win.
     function riggedRoll() external {
