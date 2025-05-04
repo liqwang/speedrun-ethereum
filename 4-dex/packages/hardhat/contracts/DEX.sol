@@ -162,10 +162,10 @@ contract DEX {
     function withdraw(uint256 liquidityAmount) external returns (uint256 ethAmount, uint256 tokenAmount) {
         // 1. Calculate
         require(liquidity[msg.sender] >= liquidityAmount, "not enough liquidity to withdraw");
-        totalLiquidity -= liquidityAmount;
-        liquidity[msg.sender] -= liquidityAmount;
         ethAmount = address(this).balance * liquidityAmount / totalLiquidity;
         tokenAmount = token.balanceOf(address(this)) * liquidityAmount / totalLiquidity;
+        totalLiquidity -= liquidityAmount;
+        liquidity[msg.sender] -= liquidityAmount;
 
         // 2. Transfer
         (bool success, ) = msg.sender.call{value: ethAmount}("");
