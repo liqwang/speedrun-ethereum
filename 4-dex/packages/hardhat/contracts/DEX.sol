@@ -13,7 +13,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  */
 contract DEX {
     /* ========== GLOBAL VARIABLES ========== */
-
     IERC20 token; //instantiates the imported contract
     uint256 public totalLiquidity;
     mapping(address => uint256) public liquidity;
@@ -70,10 +69,15 @@ contract DEX {
 
     /**
      * @notice returns yOutput, or yDelta for xInput (or xDelta)
-     * @dev Follow along with the [original tutorial](https://medium.com/@austin_48503/%EF%B8%8F-minimum-viable-exchange-d84f30bd0c90) Price section for an understanding of the DEX's pricing model and for a price function to add to your contract. You may need to update the Solidity syntax (e.g. use + instead of .add, * instead of .mul, etc). Deploy when you are done.
+     * @dev NOTE: This is the core function of the DEX contract, also called AMM(Automated Market Maker)
+     * 1. Pricing model: (x + dx)(y - dy) = xy = k, like Uniswap V2
+     *    Thus, dy = y - xy / (x + dx) = y * dx / (x + dx)
+     * 2. Since there are no floating-point numbers in Solidty, we should use some math tricks to calculate the 0.3% fee for the LP(Liquidity Provider)
+     *    dx = xInput * 997 / 1000, and we should operate `the division` in the last to make the result as precise as possible
      */
-    function price(uint256 xInput, uint256 xReserves, uint256 yReserves) private pure returns (uint256 yOutput) {
-        return yReserves - (xReserves * yReserves) / (xReserves + xInput);
+    function price(uint256 xInput, uint256 xReserves, uint256 yReserves) public pure returns (uint256 yOutput) {
+        uint256 xInputWithoutFee = xInput * 997;
+        return (yReserves * xInputWithoutFee) / (1000 * xReserves + xInputWithoutFee);
     }
 
     /**
